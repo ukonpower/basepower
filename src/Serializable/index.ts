@@ -81,7 +81,7 @@ export class Serializable extends EventEmitter {
 
 		super();
 
-		this.uuid = crypto.randomUUID();
+		this.uuid = ( typeof crypto !== 'undefined' && crypto.randomUUID ) ? crypto.randomUUID() : ( Math.random().toString( 36 ).slice( 2 ) + Math.random().toString( 36 ).slice( 2 ) );
 
 		this.fields_ = new Map();
 
