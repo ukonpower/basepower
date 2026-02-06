@@ -5,6 +5,7 @@ import 'highlight.js/styles/github-dark.min.css';
 
 import { setupEventEmitterDemo } from './demos/event-emitter-demo';
 import { setupSerializableDemo } from './demos/serializable-demo';
+import { setupReactDemo } from './demos/react-demo-mount';
 import { setupLLMCopy } from './llm-copy';
 
 // highlight.js setup
@@ -35,6 +36,9 @@ document.getElementById('btn-clear-emitter')?.addEventListener('click', () => {
 document.getElementById('btn-clear-serializable')?.addEventListener('click', () => {
   document.getElementById('log-serializable')!.textContent = '';
 });
+
+// React demo
+setupReactDemo();
 
 // Copy for LLM
 setupLLMCopy();

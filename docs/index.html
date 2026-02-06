@@ -17,6 +17,7 @@
     <a href="#install">Installation</a>
     <a href="#event-emitter">EventEmitter</a>
     <a href="#serializable">Serializable</a>
+    <a href="#react">React</a>
     <a href="#types">Types</a>
   </nav>
 
@@ -132,6 +133,41 @@ stats.field('hp', () => hp, (v) => { hp = v; });
       </div>
     </section>
 
+    <section id="react">
+      <h2>React Integration</h2>
+      <p>Hooks for binding Serializable fields to React components. Install with <code>basepower</code> and import from <code>basepower/react</code>.</p>
+      <pre><code class="language-typescript">import { useSerializableField, useWatchSerializable } from 'basepower/react';</code></pre>
+
+      <h3>useSerializableField(serializable, fieldPath)</h3>
+      <p>Returns a <code>[value, setter]</code> tuple that stays in sync with a single field. The component re-renders only when that specific field changes.</p>
+      <pre><code class="language-typescript">function HpEditor({ obj }: { obj: Serializable }) {
+  const [hp, setHp] = useSerializableField&lt;number&gt;(obj, 'stats/hp');
+
+  return &lt;input
+    type="range" min={0} max={200}
+    value={hp ?? 0}
+    onChange={(e) =&gt; setHp(Number(e.target.value))}
+  /&gt;;
+}</code></pre>
+
+      <h3>useWatchSerializable(serializable, deps?)</h3>
+      <p>Returns all serialized fields and re-renders when any (or specified) field changes. Pass a <code>deps</code> array to limit which fields trigger re-renders.</p>
+      <pre><code class="language-typescript">// re-render on ANY field change
+const allFields = useWatchSerializable(obj);
+
+// re-render only when 'stats/hp' changes
+const fields = useWatchSerializable(obj, ['stats/hp']);</code></pre>
+
+      <div class="demo">
+        <h3>Interactive Demo</h3>
+        <p style="font-size:0.85rem;color:#666;margin-bottom:0.75rem">
+          Edit the fields below — both serialized views update reactively.
+          The right panel only watches <code>stats/hp</code>, so it re-renders only when HP changes.
+        </p>
+        <div id="react-demo-root"></div>
+      </div>
+    </section>
+
     <section id="types">
       <h2>Type Reference</h2>
       <h3>SelectList</h3>
@@ -185,6 +221,6 @@ interface SchemaField {
     <p>basepower &copy; 2026 <a href="https://github.com/ukonpower">ukonpower</a> — <a href="https://github.com/ukonpower/basepower">GitHub</a> — MIT License</p>
   </footer>
 
-  <script type="module" src="./src/main.ts"></script>
+  <script type="module" src="./src/main.tsx"></script>
 </body>
 </html>
