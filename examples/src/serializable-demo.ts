@@ -28,8 +28,8 @@ export function setupSerializableDemo(log: (msg: string) => void) {
   });
 
   document.getElementById('btn-dir')!.addEventListener('click', () => {
-    const dir = obj.serializeToDirectory();
-    log('[Serializable] serializeToDirectory() => ' + JSON.stringify(dir, null, 2));
+    const schema = obj.getSchema();
+    log('[Serializable] getSchema() => ' + JSON.stringify(schema, null, 2));
   });
 
   document.getElementById('btn-deserialize')!.addEventListener('click', () => {

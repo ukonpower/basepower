@@ -16,42 +16,65 @@ describe('Serializable', () => {
     expect(s.getField('value')).toBe(5);
   });
 
-  it('serialize respects noExport flag for readonly fields', () => {
+  it('serialize excludes fields with export: false', () => {
     const { s } = createSimple();
-    let hidden = 3;
-    s.field('hidden', () => hidden); // no setter -> readOnly & noExport
+    let readOnlyVal = 3;
+    s.field('readOnlyVal', () => readOnlyVal); // no setter -> readOnly only (still exported)
 
-    const view = s.serialize();
-    expect(view).toEqual({ value: 1, hidden: 3 });
+    // No-setter field IS included in serialize
+    const json = s.serialize();
+    expect(json).toEqual({ value: 1, readOnlyVal: 3 });
 
-    const exported = s.serialize({ mode: 'export' });
-    expect(exported).toEqual({ value: 1 });
+    // Add an explicitly non-exported field
+    let internal = 99;
+    s.field('internal', () => internal, (v: number) => { internal = v; }, { export: false });
+    const json2 = s.serialize();
+    expect(json2).toEqual({ value: 1, readOnlyVal: 3 });
+    // 'internal' is excluded because export: false
   });
 
-  it('serializeToDirectory creates nested structure', () => {
+  it('getSchema creates nested structure', () => {
     const s = new Serializable();
     const rootDir = s.fieldDir('foo');
     let num = 2;
     rootDir.field('bar', () => num, (v: number) => { num = v; });
 
-    const dir = s.serializeToDirectory();
-    expect(dir).toEqual({
-      type: 'folder',
+    const schema = s.getSchema();
+    expect(schema).toEqual({
+      type: 'group',
       childs: {
         foo: {
-          type: 'folder',
+          type: 'group',
           childs: {
             bar: {
-              type: 'value',
+              type: 'field',
               value: 2,
               opt: {},
             },
           },
-          opt: { isFolder: true, noExport: true, readOnly: true },
+          opt: { isFolder: true, readOnly: true },
         },
       },
       opt: {},
     });
+  });
+
+  it('getSchema includes export: false fields', () => {
+    const s = new Serializable();
+    let val = 42;
+    s.field('visible', () => val, (v: number) => { val = v; });
+    s.field('hidden', () => val, (v: number) => { val = v; }, { export: false });
+
+    const schema = s.getSchema();
+    expect(schema.type).toBe('group');
+    if (schema.type === 'group') {
+      expect(schema.childs['visible']).toBeDefined();
+      expect(schema.childs['hidden']).toBeDefined();
+    }
+
+    // serialize should exclude hidden
+    const json = s.serialize();
+    expect(json).toEqual({ visible: 42 });
   });
 
   it('has a uuid', () => {

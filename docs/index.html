@@ -61,17 +61,23 @@ emitter.off('data');             // remove all</code></pre>
 console.log(obj.uuid); // auto-generated UUID</code></pre>
 
       <h3>field(path, getter, setter?, opt?)</h3>
-      <p>Register a serializable field. If no setter is provided, the field is read-only and excluded from export.</p>
+      <p>Register a field. If no setter is provided, the field is read-only. Use <code>{ export: false }</code> to exclude from <code>serialize()</code>.</p>
       <pre><code>let hp = 100;
-obj.field('hp', () => hp, (v) => { hp = v; });</code></pre>
+obj.field('hp', () => hp, (v) => { hp = v; });
+
+// read-only field (still included in toJSON)
+obj.field('name', () => 'Player1');
+
+// excluded from toJSON output
+obj.field('debugVal', () => val, (v) => { val = v; }, { export: false });</code></pre>
 
       <h3>fieldDir(name, opt?)</h3>
-      <p>Create a directory (group) for organizing fields hierarchically.</p>
+      <p>Create a group for organizing fields hierarchically.</p>
       <pre><code>const stats = obj.fieldDir('stats');
 stats.field('hp', () => hp, (v) => { hp = v; });
 // accessible as 'stats/hp'</code></pre>
 
-      <h3>getField(path, event?)</h3>
+      <h3>getField(path)</h3>
       <p>Get the current value of a field.</p>
       <pre><code>obj.getField('hp'); // 100</code></pre>
 
@@ -79,19 +85,19 @@ stats.field('hp', () => hp, (v) => { hp = v; });
       <p>Set the value of a field. Emits <code>fields/update</code> and <code>fields/update/&lt;path&gt;</code> events.</p>
       <pre><code>obj.setField('hp', 50);</code></pre>
 
-      <h3>serialize(event?)</h3>
-      <p>Serialize all fields to a flat key-value object. Pass <code>{ mode: 'export' }</code> to exclude noExport fields.</p>
+      <h3>serialize()</h3>
+      <p>Serialize fields to a flat key-value object. Fields with <code>export: false</code> are excluded.</p>
       <pre><code>const data = obj.serialize();
-const exported = obj.serialize({ mode: 'export' });</code></pre>
+// { hp: 100, name: 'Player1' }</code></pre>
 
       <h3>deserialize(props)</h3>
       <p>Restore field values from a serialized object.</p>
       <pre><code>obj.deserialize({ hp: 75 });</code></pre>
 
-      <h3>serializeToDirectory()</h3>
-      <p>Serialize fields into a nested directory tree structure based on <code>/</code>-separated paths.</p>
-      <pre><code>const tree = obj.serializeToDirectory();
-// { type: 'folder', childs: { stats: { type: 'folder', childs: { hp: { type: 'value', value: 100 } } } } }</code></pre>
+      <h3>getSchema()</h3>
+      <p>Get all fields as a nested tree structure based on <code>/</code>-separated paths. Includes all fields regardless of export setting.</p>
+      <pre><code>const tree = obj.getSchema();
+// { type: 'group', childs: { stats: { type: 'group', childs: { hp: { type: 'field', value: 100 } } } } }</code></pre>
     </section>
 
     <section id="types">
@@ -107,40 +113,38 @@ const exported = obj.serialize({ mode: 'export' });</code></pre>
   disabled?: boolean;
 }</code></pre>
 
-      <h3>SerializableFieldOpt</h3>
-      <pre><code>type SerializableFieldOpt = {
+      <h3>FieldOpt</h3>
+      <pre><code>type FieldOpt = {
   isFolder?: boolean;
-  noExport?: boolean;
-  hidden?: boolean | ((value: SerializeFieldValue) => boolean);
-  format?: SerializableFieldFormat;
+  export?: boolean;
+  hidden?: boolean | ((value: FieldValue) => boolean);
+  format?: FieldFormat;
 } & ValueOpt</code></pre>
 
-      <h3>SerializableFieldFormat</h3>
-      <pre><code>type SerializableFieldFormat =
+      <h3>FieldFormat</h3>
+      <pre><code>type FieldFormat =
   | { type: 'vector' }
   | { type: 'select'; list: SelectList | (() => SelectList) }
-  | { type: 'array'; labels?: (value: SerializeFieldValue, index: number) => string }</code></pre>
+  | { type: 'array'; labels?: (value: FieldValue, index: number) => string }</code></pre>
 
-      <h3>SerializeField</h3>
-      <pre><code>interface SerializeField {
-  [key: string]: SerializeFieldValue
+      <h3>SerializedFields</h3>
+      <pre><code>interface SerializedFields {
+  [key: string]: FieldValue
 }</code></pre>
 
-      <h3>SerializeFieldDirectory</h3>
-      <pre><code>type SerializeFieldDirectory =
-  | SerializeFieldDirectoryFolder
-  | SerializeFieldDirectoryValue
+      <h3>SchemaNode</h3>
+      <pre><code>type SchemaNode = SchemaGroup | SchemaField
 
-interface SerializeFieldDirectoryFolder {
-  type: 'folder';
-  childs: { [key: string]: SerializeFieldDirectory };
-  opt?: SerializableFieldOpt;
+interface SchemaGroup {
+  type: 'group';
+  childs: { [key: string]: SchemaNode };
+  opt?: FieldOpt;
 }
 
-interface SerializeFieldDirectoryValue {
-  type: 'value';
-  value: SerializeFieldValue;
-  opt?: SerializableFieldOpt;
+interface SchemaField {
+  type: 'field';
+  value: FieldValue;
+  opt?: FieldOpt;
 }</code></pre>
     </section>
   </main>

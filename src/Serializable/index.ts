@@ -14,59 +14,55 @@ export type ValueOpt = {
 	disabled?: boolean,
 }
 
-interface SerializeFieldFormatVector {
+interface FieldFormatVector {
 	type: "vector",
 }
 
-interface SerializeFieldFormatSelect {
+interface FieldFormatSelect {
 	type: "select",
 	list: SelectList | ( () => SelectList )
 }
 
-interface SerializeFieldFormatArray {
+interface FieldFormatArray {
 	type: "array",
-	labels?: ( value: SerializeFieldValue, index: number ) => string
+	labels?: ( value: FieldValue, index: number ) => string
 }
 
-export type SerializableFieldFormat = SerializeFieldFormatVector | SerializeFieldFormatSelect | SerializeFieldFormatArray
+export type FieldFormat = FieldFormatVector | FieldFormatSelect | FieldFormatArray
 
-export type SerializableFieldOpt = {
+export type FieldOpt = {
 	isFolder?: boolean,
-	noExport?: boolean,
-	hidden?: boolean | ( ( value: SerializeFieldValue ) => boolean ),
-	format?: SerializableFieldFormat,
+	export?: boolean,
+	hidden?: boolean | ( ( value: FieldValue ) => boolean ),
+	format?: FieldFormat,
 } & ValueOpt
 
-export type SerializeFieldPrimitive = number | string | boolean | null | undefined | ( () => void );
-export type SerializeFieldObjective = SerializeFieldPrimitive | SerializeFieldObjective[] | { [key: string]: SerializeFieldObjective };
-export type SerializeFieldValue = SerializeFieldObjective | { [key: string]: SerializeFieldValue };
-export interface SerializeField {
-	[key: string]: SerializeFieldValue
+export type FieldPrimitive = number | string | boolean | null | undefined | ( () => void );
+export type FieldComposite = FieldPrimitive | FieldComposite[] | { [key: string]: FieldComposite };
+export type FieldValue = FieldComposite | { [key: string]: FieldValue };
+export interface SerializedFields {
+	[key: string]: FieldValue
 }
 
-export interface SerializeFieldDirectoryFolder {
-	type: "folder",
-	childs: {[key: string]: SerializeFieldDirectory},
-	opt?: SerializableFieldOpt,
+export interface SchemaGroup {
+	type: "group",
+	childs: {[key: string]: SchemaNode},
+	opt?: FieldOpt,
 }
-export interface SerializeFieldDirectoryValue {
-	type: "value",
-	value: SerializeFieldValue,
-	opt?: SerializableFieldOpt,
-}
-
-export type SerializeFieldDirectory = SerializeFieldDirectoryFolder | SerializeFieldDirectoryValue
-
-interface SerializeFieldSerializeEvent {
-	mode: "view" | "export"
+export interface SchemaField {
+	type: "field",
+	value: FieldValue,
+	opt?: FieldOpt,
 }
 
-type SerializeFieldGetter<T extends SerializeFieldValue> = ( event: SerializeFieldSerializeEvent ) => T;
-type SerializeFieldSetter<T extends SerializeFieldValue> = ( value: T ) => void;
-interface SerializeFieldProxy {
-	get: SerializeFieldGetter<SerializeFieldValue>,
-	set: SerializeFieldSetter<SerializeFieldValue>,
-	opt?: SerializableFieldOpt
+export type SchemaNode = SchemaGroup | SchemaField
+
+type FieldGetter<T extends FieldValue> = () => T;
+type FieldSetter<T extends FieldValue> = ( value: T ) => void;
+interface FieldProxy {
+	get: FieldGetter<FieldValue>,
+	set: FieldSetter<FieldValue>,
+	opt?: FieldOpt
 }
 
 // --- Class ---
@@ -75,7 +71,7 @@ export class Serializable extends EventEmitter {
 
 	public readonly uuid: string;
 	public initiator: string;
-	private fields_: Map<string, SerializeFieldProxy>;
+	private fields_: Map<string, FieldProxy>;
 
 	constructor() {
 
@@ -93,27 +89,17 @@ export class Serializable extends EventEmitter {
 		Serialize
 	-------------------------------*/
 
-	public serialize( event?: SerializeFieldSerializeEvent ): SerializeField {
+	public serialize(): SerializedFields {
 
-		event = event || { mode: "view" };
-
-		const serialized: SerializeField = {};
+		const serialized: SerializedFields = {};
 
 		this.fields_.forEach( ( field, k ) => {
 
 			const opt = this.getFieldOpt( k );
 
-			if ( event.mode == "export" && opt ) {
+			if ( opt && opt.export === false ) return;
 
-				if ( opt ) {
-
-					if ( opt.noExport ) return;
-
-				}
-
-			}
-
-			serialized[ k ] = field.get( event );
+			serialized[ k ] = field.get();
 
 		} );
 
@@ -121,12 +107,20 @@ export class Serializable extends EventEmitter {
 
 	}
 
-	public serializeToDirectory() {
+	public getSchema(): SchemaNode {
 
-		const toDirectory = ( serialized: SerializeField ) => {
+		const allFields: SerializedFields = {};
 
-			const result: SerializeFieldDirectory = {
-				type: "folder",
+		this.fields_.forEach( ( field, k ) => {
+
+			allFields[ k ] = field.get();
+
+		} );
+
+		const toTree = ( serialized: SerializedFields ) => {
+
+			const result: SchemaNode = {
+				type: "group",
 				childs: {},
 				opt: {}
 			};
@@ -140,7 +134,7 @@ export class Serializable extends EventEmitter {
 
 				if ( ! key ) continue;
 
-				let target:SerializeFieldDirectory = result;
+				let target: SchemaNode = result;
 
 				const splitKeys = key.split( '/' );
 
@@ -150,14 +144,14 @@ export class Serializable extends EventEmitter {
 
 					if ( ! splitedKey ) continue;
 
-					if ( target.type == "value" ) continue;
+					if ( target.type == "field" ) continue;
 
 					if ( ! target.childs[ splitedKey ] ) {
 
 						if ( j == splitKeys.length - 1 ) {
 
 							target.childs[ splitedKey ] = {
-								type: "value",
+								type: "field",
 								value: null,
 								opt
 							};
@@ -165,7 +159,7 @@ export class Serializable extends EventEmitter {
 						} else {
 
 							target.childs[ splitedKey ] = {
-								type: "folder",
+								type: "group",
 								childs: {},
 								opt
 							};
@@ -178,7 +172,7 @@ export class Serializable extends EventEmitter {
 
 				}
 
-				if ( target.type == "value" ) {
+				if ( target.type == "field" ) {
 
 					target.value = serialized[ key ] as any;
 
@@ -190,7 +184,7 @@ export class Serializable extends EventEmitter {
 
 		};
 
-		return toDirectory( this.serialize() );
+		return toTree( allFields );
 
 	}
 
@@ -198,7 +192,7 @@ export class Serializable extends EventEmitter {
 		Deserialize
 	-------------------------------*/
 
-	public deserialize( props: SerializeField ) {
+	public deserialize( props: SerializedFields ) {
 
 		const keys = Object.keys( props );
 
@@ -219,26 +213,14 @@ export class Serializable extends EventEmitter {
 	}
 
 	/*-------------------------------
-		Export
-	-------------------------------*/
-
-	public exportEditor() {
-
-		this.serialize( {
-			mode: "export"
-		} );
-
-	}
-
-	/*-------------------------------
 		Field
 	-------------------------------*/
 
-	public field<T extends SerializeFieldValue>( path: string, getter: ( event: SerializeFieldSerializeEvent ) => T, opt?: SerializableFieldOpt ): void;
+	public field<T extends FieldValue>( path: string, getter: () => T, opt?: FieldOpt ): void;
 
-	public field<T extends SerializeFieldValue>( path: string, getter: ( event: SerializeFieldSerializeEvent ) => T, setter?: ( v: T ) => void, opt?: SerializableFieldOpt ): void;
+	public field<T extends FieldValue>( path: string, getter: () => T, setter?: ( v: T ) => void, opt?: FieldOpt ): void;
 
-	public field<T extends SerializeFieldValue>( path: string, getter: ( event: SerializeFieldSerializeEvent ) => T, setter_option?: ( ( v: T ) => void ) | SerializableFieldOpt, option?: SerializableFieldOpt ) {
+	public field<T extends FieldValue>( path: string, getter: () => T, setter_option?: ( ( v: T ) => void ) | FieldOpt, option?: FieldOpt ) {
 
 		const setter = typeof setter_option == "function" ? setter_option : undefined;
 		const opt = typeof setter_option == "object" && setter_option || option || {};
@@ -246,7 +228,6 @@ export class Serializable extends EventEmitter {
 		if ( ! setter ) {
 
 			opt.readOnly = true;
-			opt.noExport = true;
 
 		}
 
@@ -254,7 +235,7 @@ export class Serializable extends EventEmitter {
 
 		this.fields_.set( normalizedPath, {
 			get: getter,
-			set: ( ( v: SerializeFieldValue ) => {
+			set: ( ( v: FieldValue ) => {
 
 				if ( setter ) setter( v as T );
 
@@ -266,7 +247,7 @@ export class Serializable extends EventEmitter {
 
 	}
 
-	public fieldDir( name:string, opt?: SerializableFieldOpt ) {
+	public fieldDir( name: string, opt?: FieldOpt ) {
 
 		const dir = name;
 
@@ -274,7 +255,7 @@ export class Serializable extends EventEmitter {
 
 		return {
 			dir: ( name: string ) => this.fieldDir( `${dir}/${name}` ),
-			field: <T extends SerializeFieldValue>( name: string, get: () => T, set?: ( value: T ) => void, opt?: SerializableFieldOpt ) => {
+			field: <T extends FieldValue>( name: string, get: () => T, set?: ( value: T ) => void, opt?: FieldOpt ) => {
 
 				this.field( `${dir}/${name}`, get, set, opt );
 
@@ -287,21 +268,19 @@ export class Serializable extends EventEmitter {
 		Set / Get Field
 	-------------------------------*/
 
-	public setField( path: string, value: SerializeFieldValue ) {
+	public setField( path: string, value: FieldValue ) {
 
 		this.deserialize( { [ path ]: value } );
 
 	}
 
-	public getField<T extends SerializeFieldValue>( path: string, event?: SerializeFieldSerializeEvent ) {
+	public getField<T extends FieldValue>( path: string ) {
 
 		const field = this.fields_.get( path );
 
 		if ( field ) {
 
-			event = event || { mode: "view" };
-
-			return field.get( event ) as T;
+			return field.get() as T;
 
 		}
 
