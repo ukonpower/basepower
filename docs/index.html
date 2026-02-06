@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>basepower — Documentation</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <header>
+    <h1>basepower</h1>
+    <p class="tagline">Lightweight EventEmitter &amp; Serializable primitives for TypeScript</p>
+  </header>
+
+  <main>
+    <section id="install">
+      <h2>Installation</h2>
+      <pre><code>npm install basepower</code></pre>
+      <pre><code>import { EventEmitter, Serializable } from 'basepower';</code></pre>
+    </section>
+
+    <section id="event-emitter">
+      <h2>EventEmitter</h2>
+      <p>A minimal event system.</p>
+
+      <h3>Constructor</h3>
+      <pre><code>const emitter = new EventEmitter();</code></pre>
+
+      <h3>on(event, callback)</h3>
+      <p>Register a listener for an event.</p>
+      <pre><code>emitter.on('data', (value) => {
+  console.log(value);
+});</code></pre>
+
+      <h3>once(event, callback)</h3>
+      <p>Register a listener that fires only once.</p>
+      <pre><code>emitter.once('init', () => {
+  console.log('initialized');
+});</code></pre>
+
+      <h3>off(event, callback?)</h3>
+      <p>Remove a specific listener, or all listeners for an event if no callback is provided.</p>
+      <pre><code>emitter.off('data', myHandler); // remove specific
+emitter.off('data');             // remove all</code></pre>
+
+      <h3>emit(event, args?)</h3>
+      <p>Emit an event. Arguments are spread to each listener.</p>
+      <pre><code>emitter.emit('data', [42, 'hello']);</code></pre>
+
+      <h3>hasEvent(event)</h3>
+      <p>Returns <code>true</code> if there are listeners for the given event.</p>
+      <pre><code>emitter.hasEvent('data'); // boolean</code></pre>
+    </section>
+
+    <section id="serializable">
+      <h2>Serializable</h2>
+      <p>A serialization framework that extends EventEmitter. Define fields with getter/setter pairs, then serialize and deserialize them.</p>
+
+      <h3>Constructor</h3>
+      <pre><code>const obj = new Serializable();
+console.log(obj.uuid); // auto-generated UUID</code></pre>
+
+      <h3>field(path, getter, setter?, opt?)</h3>
+      <p>Register a serializable field. If no setter is provided, the field is read-only and excluded from export.</p>
+      <pre><code>let hp = 100;
+obj.field('hp', () => hp, (v) => { hp = v; });</code></pre>
+
+      <h3>fieldDir(name, opt?)</h3>
+      <p>Create a directory (group) for organizing fields hierarchically.</p>
+      <pre><code>const stats = obj.fieldDir('stats');
+stats.field('hp', () => hp, (v) => { hp = v; });
+// accessible as 'stats/hp'</code></pre>
+
+      <h3>getField(path, event?)</h3>
+      <p>Get the current value of a field.</p>
+      <pre><code>obj.getField('hp'); // 100</code></pre>
+
+      <h3>setField(path, value)</h3>
+      <p>Set the value of a field. Emits <code>fields/update</code> and <code>fields/update/&lt;path&gt;</code> events.</p>
+      <pre><code>obj.setField('hp', 50);</code></pre>
+
+      <h3>serialize(event?)</h3>
+      <p>Serialize all fields to a flat key-value object. Pass <code>{ mode: 'export' }</code> to exclude noExport fields.</p>
+      <pre><code>const data = obj.serialize();
+const exported = obj.serialize({ mode: 'export' });</code></pre>
+
+      <h3>deserialize(props)</h3>
+      <p>Restore field values from a serialized object.</p>
+      <pre><code>obj.deserialize({ hp: 75 });</code></pre>
+
+      <h3>serializeToDirectory()</h3>
+      <p>Serialize fields into a nested directory tree structure based on <code>/</code>-separated paths.</p>
+      <pre><code>const tree = obj.serializeToDirectory();
+// { type: 'folder', childs: { stats: { type: 'folder', childs: { hp: { type: 'value', value: 100 } } } } }</code></pre>
+    </section>
+
+    <section id="types">
+      <h2>Type Reference</h2>
+      <h3>SelectList</h3>
+      <pre><code>type SelectList = ({ value: any; label: string } | string)[]</code></pre>
+
+      <h3>ValueOpt</h3>
+      <pre><code>type ValueOpt = {
+  label?: string;
+  readOnly?: boolean;
+  step?: number;
+  disabled?: boolean;
+}</code></pre>
+
+      <h3>SerializableFieldOpt</h3>
+      <pre><code>type SerializableFieldOpt = {
+  isFolder?: boolean;
+  noExport?: boolean;
+  hidden?: boolean | ((value: SerializeFieldValue) => boolean);
+  format?: SerializableFieldFormat;
+} & ValueOpt</code></pre>
+
+      <h3>SerializableFieldFormat</h3>
+      <pre><code>type SerializableFieldFormat =
+  | { type: 'vector' }
+  | { type: 'select'; list: SelectList | (() => SelectList) }
+  | { type: 'array'; labels?: (value: SerializeFieldValue, index: number) => string }</code></pre>
+
+      <h3>SerializeField</h3>
+      <pre><code>interface SerializeField {
+  [key: string]: SerializeFieldValue
+}</code></pre>
+
+      <h3>SerializeFieldDirectory</h3>
+      <pre><code>type SerializeFieldDirectory =
+  | SerializeFieldDirectoryFolder
+  | SerializeFieldDirectoryValue
+
+interface SerializeFieldDirectoryFolder {
+  type: 'folder';
+  childs: { [key: string]: SerializeFieldDirectory };
+  opt?: SerializableFieldOpt;
+}
+
+interface SerializeFieldDirectoryValue {
+  type: 'value';
+  value: SerializeFieldValue;
+  opt?: SerializableFieldOpt;
+}</code></pre>
+    </section>
+  </main>
+
+  <footer>
+    <p>basepower</p>
+  </footer>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

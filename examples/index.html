@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>basepower examples</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+    .demo { margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+    .demo h2 { margin-top: 0; }
+    button { padding: 0.4rem 0.8rem; margin: 0.25rem; cursor: pointer; }
+    #log { background: #1a1a1a; color: #0f0; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>basepower Examples</h1>
+
+  <div class="demo">
+    <h2>EventEmitter Demo</h2>
+    <div>
+      <button id="btn-on">on("greet")</button>
+      <button id="btn-emit">emit("greet")</button>
+      <button id="btn-once">once("greet")</button>
+      <button id="btn-off">off("greet")</button>
+    </div>
+  </div>
+
+  <div class="demo">
+    <h2>Serializable Demo</h2>
+    <div>
+      <button id="btn-serialize">serialize()</button>
+      <button id="btn-set">setField("score", random)</button>
+      <button id="btn-dir">serializeToDirectory()</button>
+      <button id="btn-deserialize">deserialize({score: 999})</button>
+    </div>
+  </div>
+
+  <h3>Log</h3>
+  <div id="log"></div>
+  <button id="btn-clear" style="margin-top:0.5rem;">Clear Log</button>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
