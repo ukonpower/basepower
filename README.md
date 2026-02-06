@@ -1,5 +1,9 @@
 # basepower
 
+[![npm version](https://img.shields.io/npm/v/basepower.svg)](https://www.npmjs.com/package/basepower)
+[![npm downloads](https://img.shields.io/npm/dm/basepower.svg)](https://www.npmjs.com/package/basepower)
+[![license](https://img.shields.io/npm/l/basepower.svg)](./LICENSE)
+
 Lightweight EventEmitter & Serializable primitives for TypeScript.
 
 ## Installation

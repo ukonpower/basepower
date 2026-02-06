@@ -20,7 +20,8 @@
     "build": "vite build",
     "test": "vitest run",
     "dev:docs": "vite --config docs/vite.config.ts",
-    "build:docs": "vite build --config docs/vite.config.ts"
+    "build:docs": "vite build --config docs/vite.config.ts",
+    "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
     "highlight.js": "^11.11.1",
