@@ -6,4 +6,9 @@ export default defineConfig({
 	server: {
 		host: true,
 	},
+	resolve: {
+		alias: {
+			'basepower': resolve(__dirname, '../src'),
+		},
+	},
 });

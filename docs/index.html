@@ -10,13 +10,21 @@
   <header>
     <h1>basepower</h1>
     <p class="tagline">Lightweight EventEmitter &amp; Serializable primitives for TypeScript</p>
+    <button id="btn-llm-copy" class="btn-llm-copy">Copy for LLM</button>
   </header>
+
+  <nav>
+    <a href="#install">Installation</a>
+    <a href="#event-emitter">EventEmitter</a>
+    <a href="#serializable">Serializable</a>
+    <a href="#types">Types</a>
+  </nav>
 
   <main>
     <section id="install">
       <h2>Installation</h2>
-      <pre><code>npm install basepower</code></pre>
-      <pre><code>import { EventEmitter, Serializable } from 'basepower';</code></pre>
+      <pre><code class="language-bash">npm install basepower</code></pre>
+      <pre><code class="language-typescript">import { EventEmitter, Serializable } from 'basepower';</code></pre>
     </section>
 
     <section id="event-emitter">
@@ -24,32 +32,44 @@
       <p>A minimal event system.</p>
 
       <h3>Constructor</h3>
-      <pre><code>const emitter = new EventEmitter();</code></pre>
+      <pre><code class="language-typescript">const emitter = new EventEmitter();</code></pre>
 
       <h3>on(event, callback)</h3>
       <p>Register a listener for an event.</p>
-      <pre><code>emitter.on('data', (value) => {
+      <pre><code class="language-typescript">emitter.on('data', (value) => {
   console.log(value);
 });</code></pre>
 
       <h3>once(event, callback)</h3>
       <p>Register a listener that fires only once.</p>
-      <pre><code>emitter.once('init', () => {
+      <pre><code class="language-typescript">emitter.once('init', () => {
   console.log('initialized');
 });</code></pre>
 
       <h3>off(event, callback?)</h3>
       <p>Remove a specific listener, or all listeners for an event if no callback is provided.</p>
-      <pre><code>emitter.off('data', myHandler); // remove specific
+      <pre><code class="language-typescript">emitter.off('data', myHandler); // remove specific
 emitter.off('data');             // remove all</code></pre>
 
       <h3>emit(event, args?)</h3>
       <p>Emit an event. Arguments are spread to each listener.</p>
-      <pre><code>emitter.emit('data', [42, 'hello']);</code></pre>
+      <pre><code class="language-typescript">emitter.emit('data', [42, 'hello']);</code></pre>
 
       <h3>hasEvent(event)</h3>
       <p>Returns <code>true</code> if there are listeners for the given event.</p>
-      <pre><code>emitter.hasEvent('data'); // boolean</code></pre>
+      <pre><code class="language-typescript">emitter.hasEvent('data'); // boolean</code></pre>
+
+      <div class="demo">
+        <h3>Interactive Demo</h3>
+        <div class="demo-buttons">
+          <button id="btn-emitter-on">on('greet')</button>
+          <button id="btn-emitter-emit">emit('greet')</button>
+          <button id="btn-emitter-once">once('greet')</button>
+          <button id="btn-emitter-off">off('greet')</button>
+          <button id="btn-clear-emitter" class="btn-clear">Clear</button>
+        </div>
+        <pre class="log" id="log-emitter"></pre>
+      </div>
     </section>
 
     <section id="serializable">
@@ -57,56 +77,68 @@ emitter.off('data');             // remove all</code></pre>
       <p>A serialization framework that extends EventEmitter. Define fields with getter/setter pairs, then serialize and deserialize them.</p>
 
       <h3>Constructor</h3>
-      <pre><code>const obj = new Serializable();
+      <pre><code class="language-typescript">const obj = new Serializable();
 console.log(obj.uuid); // auto-generated UUID</code></pre>
 
       <h3>field(path, getter, setter?, opt?)</h3>
       <p>Register a field. If no setter is provided, the field is read-only. Use <code>{ export: false }</code> to exclude from <code>serialize()</code>.</p>
-      <pre><code>let hp = 100;
+      <pre><code class="language-typescript">let hp = 100;
 obj.field('hp', () => hp, (v) => { hp = v; });
 
-// read-only field (still included in toJSON)
+// read-only field (still included in serialize)
 obj.field('name', () => 'Player1');
 
-// excluded from toJSON output
+// excluded from serialize output
 obj.field('debugVal', () => val, (v) => { val = v; }, { export: false });</code></pre>
 
       <h3>fieldDir(name, opt?)</h3>
       <p>Create a group for organizing fields hierarchically.</p>
-      <pre><code>const stats = obj.fieldDir('stats');
+      <pre><code class="language-typescript">const stats = obj.fieldDir('stats');
 stats.field('hp', () => hp, (v) => { hp = v; });
 // accessible as 'stats/hp'</code></pre>
 
       <h3>getField(path)</h3>
       <p>Get the current value of a field.</p>
-      <pre><code>obj.getField('hp'); // 100</code></pre>
+      <pre><code class="language-typescript">obj.getField('hp'); // 100</code></pre>
 
       <h3>setField(path, value)</h3>
       <p>Set the value of a field. Emits <code>fields/update</code> and <code>fields/update/&lt;path&gt;</code> events.</p>
-      <pre><code>obj.setField('hp', 50);</code></pre>
+      <pre><code class="language-typescript">obj.setField('hp', 50);</code></pre>
 
       <h3>serialize()</h3>
       <p>Serialize fields to a flat key-value object. Fields with <code>export: false</code> are excluded.</p>
-      <pre><code>const data = obj.serialize();
+      <pre><code class="language-typescript">const data = obj.serialize();
 // { hp: 100, name: 'Player1' }</code></pre>
 
       <h3>deserialize(props)</h3>
       <p>Restore field values from a serialized object.</p>
-      <pre><code>obj.deserialize({ hp: 75 });</code></pre>
+      <pre><code class="language-typescript">obj.deserialize({ hp: 75 });</code></pre>
 
       <h3>getSchema()</h3>
       <p>Get all fields as a nested tree structure based on <code>/</code>-separated paths. Includes all fields regardless of export setting.</p>
-      <pre><code>const tree = obj.getSchema();
+      <pre><code class="language-typescript">const tree = obj.getSchema();
 // { type: 'group', childs: { stats: { type: 'group', childs: { hp: { type: 'field', value: 100 } } } } }</code></pre>
+
+      <div class="demo">
+        <h3>Interactive Demo</h3>
+        <div class="demo-buttons">
+          <button id="btn-serialize">serialize()</button>
+          <button id="btn-set">setField(random)</button>
+          <button id="btn-dir">getSchema()</button>
+          <button id="btn-deserialize">deserialize({score:999})</button>
+          <button id="btn-clear-serializable" class="btn-clear">Clear</button>
+        </div>
+        <pre class="log" id="log-serializable"></pre>
+      </div>
     </section>
 
     <section id="types">
       <h2>Type Reference</h2>
       <h3>SelectList</h3>
-      <pre><code>type SelectList = ({ value: any; label: string } | string)[]</code></pre>
+      <pre><code class="language-typescript">type SelectList = ({ value: any; label: string } | string)[]</code></pre>
 
       <h3>ValueOpt</h3>
-      <pre><code>type ValueOpt = {
+      <pre><code class="language-typescript">type ValueOpt = {
   label?: string;
   readOnly?: boolean;
   step?: number;
@@ -114,7 +146,7 @@ stats.field('hp', () => hp, (v) => { hp = v; });
 }</code></pre>
 
       <h3>FieldOpt</h3>
-      <pre><code>type FieldOpt = {
+      <pre><code class="language-typescript">type FieldOpt = {
   isFolder?: boolean;
   export?: boolean;
   hidden?: boolean | ((value: FieldValue) => boolean);
@@ -122,18 +154,18 @@ stats.field('hp', () => hp, (v) => { hp = v; });
 } & ValueOpt</code></pre>
 
       <h3>FieldFormat</h3>
-      <pre><code>type FieldFormat =
+      <pre><code class="language-typescript">type FieldFormat =
   | { type: 'vector' }
   | { type: 'select'; list: SelectList | (() => SelectList) }
   | { type: 'array'; labels?: (value: FieldValue, index: number) => string }</code></pre>
 
       <h3>SerializedFields</h3>
-      <pre><code>interface SerializedFields {
+      <pre><code class="language-typescript">interface SerializedFields {
   [key: string]: FieldValue
 }</code></pre>
 
       <h3>SchemaNode</h3>
-      <pre><code>type SchemaNode = SchemaGroup | SchemaField
+      <pre><code class="language-typescript">type SchemaNode = SchemaGroup | SchemaField
 
 interface SchemaGroup {
   type: 'group';
